@@ -122,7 +122,7 @@ spec:
   tls:
     - hosts:
         - feedback.glauca.digital
-      secretName: oauth-tls
+      secretName: feedback-tls
   rules:
   - host: feedback.glauca.digital
     http:

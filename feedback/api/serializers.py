@@ -4,6 +4,7 @@ from .. import models
 
 class FeedbackRequestSerializer(serializers.ModelSerializer):
     public_url = serializers.URLField(read_only=True)
+    creator = serializers.CharField(read_only=True)
 
     class Meta:
         model = models.FeedbackRequest
