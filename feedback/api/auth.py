@@ -3,6 +3,7 @@ from rest_framework import exceptions
 from django.contrib.auth import get_user_model
 import django_keycloak_auth.clients
 import keycloak
+import datetime
 import jose.jwt
 import dataclasses
 
@@ -19,10 +20,21 @@ class BearerAuthentication(authentication.BaseAuthentication):
 
         try:
             claims = django_keycloak_auth.clients.verify_token(token)
-        except keycloak.exceptions.KeycloakClientError:
+        except keycloak.exceptions.KeycloakClientError as e:
             raise exceptions.AuthenticationFailed('Invalid token')
 
         user = get_user_model().objects.filter(username=claims["sub"]).first()
+        if not user:
+            oidc_profile = django_keycloak_auth.clients.update_or_create_user_and_oidc_profile(id_token_object=claims)
+            user = oidc_profile.user
+
+        try:
+            django_keycloak_auth.clients.get_active_access_token(user.oidc_profile)
+        except django_keycloak_auth.clients.TokensExpired:
+            user.oidc_profile.access_token = token
+            user.oidc_profile.expires_before = datetime.datetime.fromtimestamp(claims["exp"])\
+                .replace(tzinfo=datetime.timezone.utc)
+            user.oidc_profile.save()
 
         return user, OAuthToken(token=token, claims=claims)
 
