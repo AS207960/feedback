@@ -70,6 +70,9 @@ spec:
             - secretRef:
                 name: feedback-keycloak
               prefix: "KEYCLOAK_"
+            - secretRef:
+                name: feedback-gchat
+              prefix: "GCHAT_"
       containers:
         - name: gunicorn
           image: as207960/feedback:(version)
@@ -91,6 +94,9 @@ spec:
             - secretRef:
                 name: feedback-keycloak
               prefix: "KEYCLOAK_"
+            - secretRef:
+                name: feedback-gchat
+              prefix: "GCHAT_"
 ---
 apiVersion: v1
 kind: Service
