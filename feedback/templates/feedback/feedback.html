@@ -1,0 +1,19 @@
+{% extends 'feedback/base.html' %}
+{% load crispy_forms_tags %}
+{% block content %}
+    <div class="container my-3">
+        <h1>Glauca Feedback</h1>
+        {% if obj.rating %}
+            <div class="alert alert-success" role="alert">
+                <h4 class="alert-heading">Your rating has been saved</h4>
+                <p>You can still update it or tell us more if you'd like.</p>
+                <hr>
+                <p>
+                    Why not give us a review on <a href="https://g.page/glauca/review">Google</a> too?
+                </p>
+            </div>
+        {% endif %}
+        <h3>Your feedback on: {{ obj.description }}</h3>
+        {% crispy feedback_form feedback_form.helper %}
+    </div>
+{% endblock %}
