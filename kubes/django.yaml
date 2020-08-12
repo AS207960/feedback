@@ -1,0 +1,109 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: feedback-django-static
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: feedback-django-conf
+data:
+  HOST: "feedback.glauca.digital,feedback-nginx"
+  DJANGO_SETTINGS_MODULE: as207960_feedback.settings
+  EXTERNAL_URL: "https://feedback.glauca.digital"
+  SENTRY_ENVIRONMENT: "prod"
+  KEYCLOAK_SERVER_URL: "https://sso.as207960.net/"
+  KEYCLOAK_REALM: master
+  KEYCLOAK_SCOPES: "openid email profile"
+  KEYCLOAK_CLIENT_ID: "feedback"
+  DB_HOST: "cockroachdb"
+  DB_NAME: "feedback"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: feedback-django
+  labels:
+    app: feedback
+    part: django
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: feedback
+      part: django
+  template:
+    metadata:
+      annotations:
+        cni.projectcalico.org/ipv6pools: "[\"default-ipv6-ippool\"]"
+      labels:
+        app: feedback
+        part: django
+    spec:
+      volumes:
+        - name: static
+          persistentVolumeClaim:
+            claimName: feedback-django-static
+      initContainers:
+        - name: django
+          image: as207960/feedback:(version)
+          imagePullPolicy: Always
+          command: ["sh", "-c", "python3 manage.py collectstatic --noinput && python3 manage.py migrate && python3 manage.py sync-keycloak"]
+          volumeMounts:
+            - mountPath: "/app/static/"
+              name: static
+          envFrom:
+            - configMapRef:
+                name: feedback-django-conf
+            - secretRef:
+                name: feedback-db-creds
+              prefix: "DB_"
+            - secretRef:
+                name: feedback-django-secret
+            - secretRef:
+                name: feedback-keycloak
+              prefix: "KEYCLOAK_"
+      containers:
+        - name: gunicorn
+          image: as207960/feedback:(version)
+          imagePullPolicy: Always
+          command: ["gunicorn", "-w", "8", "-b", "[::]:8000", "--forwarded-allow-ips", "*", "--access-logfile", "-", "--log-level=debug", "--timeout=90", "as207960_feedback.wsgi:application"]
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - mountPath: "/app/static/"
+              name: static
+          envFrom:
+            - configMapRef:
+                name: feedback-django-conf
+            - secretRef:
+                name: feedback-db-creds
+              prefix: "DB_"
+            - secretRef:
+                name: feedback-django-secret
+            - secretRef:
+                name: feedback-keycloak
+              prefix: "KEYCLOAK_"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: feedback-django
+  labels:
+    app: feedback
+    part: django
+spec:
+  selector:
+    app: feedback
+    part: django
+  ports:
+    - port: 8000
+      targetPort: 8000
+
