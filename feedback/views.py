@@ -90,9 +90,11 @@ def feedback(request, feedback_id):
         except ValueError:
             raise SuspiciousOperation()
 
+        is_updated = rating != feedback_obj.rating
         feedback_obj.rating = rating
         feedback_obj.save()
-        notify_gchat(feedback_obj, is_new)
+        if is_updated:
+            notify_gchat(feedback_obj, is_new)
 
     initial = {
         "rating": feedback_obj.rating,
