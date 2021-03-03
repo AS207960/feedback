@@ -106,12 +106,20 @@ def feedback(request, feedback_id):
     if request.method == "POST":
         form = forms.FeedbackForm(request.POST, initial=initial)
         if form.is_valid():
+            is_updated = \
+                form.cleaned_data['rating'] != feedback_obj.rating or \
+                form.cleaned_data['liked'] != feedback_obj.liked or \
+                form.cleaned_data['disliked'] != feedback_obj.disliked or \
+                form.cleaned_data['other_comments'] != feedback_obj.other_comments
+
             feedback_obj.rating = form.cleaned_data['rating']
             feedback_obj.liked = form.cleaned_data['liked']
             feedback_obj.disliked = form.cleaned_data['disliked']
             feedback_obj.other_comments = form.cleaned_data['other_comments']
             feedback_obj.save()
-            notify_gchat(feedback_obj, is_new)
+
+            if is_updated:
+                notify_gchat(feedback_obj, is_new)
 
     else:
         form = forms.FeedbackForm(initial=initial)

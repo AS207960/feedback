@@ -34,6 +34,7 @@ class FeedbackForm(forms.Form):
         super().__init__(*args, **kwargs)
 
         self.helper = crispy_forms.helper.FormHelper()
+        self.helper.field_class = "my-3"
         self.helper.layout = crispy_forms.layout.Layout(
             crispy_forms.bootstrap.InlineRadios('rating'),
             'liked',
@@ -41,4 +42,4 @@ class FeedbackForm(forms.Form):
             'other_comments'
         )
 
-        self.helper.add_input(crispy_forms.layout.Submit('submit', 'Submit'))
+        self.helper.add_input(crispy_forms.layout.Submit('submit', 'Submit', css_class="w-100"))
